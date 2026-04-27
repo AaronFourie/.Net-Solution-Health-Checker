@@ -10,30 +10,80 @@ class Program
     const ushort BUFFER_SIZE = 4096;
     static void Main(string[] args)
     {
-        char[] BUFFER = new char[BUFFER_SIZE];
         //Memory<byte> MEMORY = new(BYTES, start:0, length: BUFFER_SIZE);
 
         try
         {
 
-            LookupAssemblies();
+            LookupSolutionDir();
+            ReadFromFile(FILE_PATH);
+        }
+        catch (AccessViolationException ex) 
+        {
+            throw new FieldAccessException(message: $"Attempt to read/write memory failed", inner: ex);
+        }
+        catch (FileLoadException ex) 
+        {
+            throw new FieldAccessException(message: $"Managed Assmebly is found but cannot be loaded", inner: ex);
+        }
+    }
 
-            if (File.Exists(FILE_PATH) == false)
+    private static int LookupSolutionDir()
+    {
+        string currentDir = AppDomain.CurrentDomain.BaseDirectory;
+
+        if(currentDir != null)
+        {
+            //lookup parent solution
+            bool dirCheck = false;
+            string searchParam = "*.sln";
+
+            string currentDirName = Directory.GetParent(currentDir).Parent.FullName;
+
+            do
             {
-                throw new FileNotFoundException(message: $"{FILE_PATH} File path doesn't exist");
+                string[] matchedFiles = Directory.GetFiles(path: currentDirName, searchPattern: searchParam);
+                dirCheck = matchedFiles.Length > 0;
+                if (dirCheck == true)
+                {
+                    dirCheck = true;
+                }
+                else
+                {
+                    currentDirName = Directory.GetParent(currentDirName).Parent.FullName;
+                }
             }
-            using FileStream FILE_STREAM = new FileStream(path: FILE_PATH, mode: FileMode.Open, access: FileAccess.ReadWrite, share: FileShare.ReadWrite, bufferSize: BUFFER_SIZE, useAsync: false);
+            while (dirCheck == false);
 
-            StreamReader STREAM_READER = new StreamReader(stream: FILE_STREAM, encoding: System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: BUFFER_SIZE);
+            Console.WriteLine(currentDirName);
+
+        }
+        
+        return 0;
+    }
+
+    private static void ReadFromFile(string filePath)
+    {
+        char[] BUFFER = new char[BUFFER_SIZE];
+
+        try
+        {
+            if (File.Exists(filePath) == false)
+            {
+                throw new FileNotFoundException(message: $"{filePath} File path doesn't exist");
+            }
+            using FileStream FILE_STREAM = new FileStream(path: filePath, mode: FileMode.Open, access: FileAccess.ReadWrite, share: FileShare.ReadWrite, bufferSize: BUFFER_SIZE, useAsync: false);
+
+            using StreamReader STREAM_READER = new StreamReader(stream: FILE_STREAM, encoding: System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: BUFFER_SIZE);
 
             if (FILE_STREAM.CanRead == false)
             {
-                throw new FieldAccessException(message: $"Cannot read from file stream {FILE_PATH}");
+                throw new FieldAccessException(message: $"Cannot read from file stream {filePath}");
             }
 
-            for(int i = 0; i<BUFFER_SIZE; i++)
+            for (int i = 0; i < BUFFER_SIZE; i++)
             {
-                if(STREAM_READER.EndOfStream == false && STREAM_READER.Peek() != -1)
+                if (STREAM_READER.EndOfStream == false && STREAM_READER.Peek() != -1)
                 {
                     STREAM_READER.ReadBlock(BUFFER, i, 1);
                 }
@@ -41,7 +91,7 @@ class Program
 
             Console.WriteLine($"BUFFER LENGTH: {BUFFER.Length}");
 
-            if(STREAM_READER.BaseStream.Length == 0)
+            if (STREAM_READER.BaseStream.Length == 0)
             {
                 Console.WriteLine("Base stream reader is empty");
 
@@ -59,36 +109,15 @@ class Program
             }
 
             Console.WriteLine(STREAM_STRING);
-            
         }
-        catch (AccessViolationException ex) 
+        catch (AccessViolationException ex)
         {
-            throw new FieldAccessException(message: $"Attempt to read/write memory failed", inner: ex);
+            throw new AccessViolationException(message: $"Attempt to read/write memory failed", innerException: ex);
         }
-        catch (FileLoadException ex) 
+        catch (FileLoadException ex)
         {
             throw new FieldAccessException(message: $"Managed Assmebly is found but cannot be loaded", inner: ex);
         }
-    }
 
-    private static int LookupAssemblies()
-    {
-        string currentDir = AppDomain.CurrentDomain.BaseDirectory;
-
-        if(currentDir != null)
-        {
-            string solutionFile = Directory.GetParent(currentDir).Parent.Parent.Parent.FullName;
-            Console.WriteLine(solutionFile);
-
-            string[] csprojFiles = Directory.GetFiles(solutionFile, "*.csproj");
-
-            foreach(string file in csprojFiles)
-            {
-                Console.WriteLine(file);
-            }
-
-        }
-        
-        return 0;
     }
 }
