@@ -68,10 +68,8 @@ class Program
     {
         try
         {
-            if (string.IsNullOrEmpty(folderPath))
-            {
-                ArgumentNullException.ThrowIfNullOrEmpty(argument: folderPath);
-            }
+
+            ArgumentNullException.ThrowIfNullOrEmpty(argument: folderPath);
 
             if (!Directory.Exists(folderPath))
             {
