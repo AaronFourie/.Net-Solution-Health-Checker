@@ -37,33 +37,62 @@ class Program
         if(currentDir != null)
         {
             //lookup parent solution
-            bool dirCheck = false;
+            bool dirCheck;
             string searchParam = "*.sln";
 
-            string currentDirName = Directory.GetParent(currentDir).Parent.FullName;
 
-            do
-            {
-                string[] matchedFiles = Directory.GetFiles(path: currentDirName, searchPattern: searchParam);
-                dirCheck = matchedFiles.Length > 0;
-                if (dirCheck == true)
-                {
-                    dirCheck = true;
-                }
-                else
-                {
-                    currentDirName = Directory.GetParent(currentDirName).Parent.FullName;
-                }
-            }
-            while (dirCheck == false);
+            string currentDirName = Directory.GetParent(currentDir)?.Parent?.FullName;
+            Console.WriteLine($"CURRENT DIR NAME {currentDirName}");
 
-            Console.WriteLine(currentDirName);
+            //do
+            //{
+            //    string[] matchedFiles = Directory.GetFiles(path: currentDirName, searchPattern: searchParam);
+            //    dirCheck = matchedFiles.Length > 0;
+            //    if (dirCheck == true)
+            //    {
+            //        dirCheck = true;
+            //    }
+            //    else
+            //    {
+            //        currentDirName = Directory.GetParent(currentDirName).Parent.FullName;
+            //    }
+            //}
+            //while (dirCheck == false);
+
+            string path = ScanSolutionFilesFromCurrentAppDomainBaseDir2(currentDirName, searchParam) ?? "Not found";
+            Console.WriteLine($"{searchParam} file found in dir {path}");
+
 
         }
         
         return 0;
     }
 
+    private static string? ScanSolutionFilesFromCurrentAppDomainBaseDir2(string dir, string searchParam)
+    {
+
+        try
+        {
+
+            string[] matchedFiles = Directory.GetFiles(path: dir, searchPattern: searchParam);
+            if(matchedFiles.Length == 0)
+            {
+                string nextDir = ScanSolutionFilesFromCurrentAppDomainBaseDir2(Directory.GetParent(dir)?.Parent?.FullName, searchParam: searchParam);
+                if(nextDir is not null)
+                {
+                    dir = nextDir;
+                }
+            }
+            return dir;
+        }
+        catch (DirectoryNotFoundException ex)
+        {
+            throw new DirectoryNotFoundException($"{dir} directory not found", innerException: ex);
+        }
+
+    }
+
+    
     private static bool ScanDirOnDisk(string folderPath)
     {
         try
