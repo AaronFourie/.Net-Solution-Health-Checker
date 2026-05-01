@@ -14,8 +14,8 @@ class Program
 
         try
         {
-
-            LookupSolutionDir();
+            ScanDirOnDisk(folderPath: "C://Users/User/Downloads/");
+            ScanSolutionFilesFromCurrentAppDomainBaseDir();
             ReadFromFile(FILE_PATH);
         }
         catch (AccessViolationException ex) 
@@ -28,9 +28,11 @@ class Program
         }
     }
 
-    private static int LookupSolutionDir()
+    private static int ScanSolutionFilesFromCurrentAppDomainBaseDir()
     {
         string currentDir = AppDomain.CurrentDomain.BaseDirectory;
+
+        Console.WriteLine($"BASE DIR THAT THE ASSEMBLY RESOLVER USES TO PROBE FOR ASSEMBLIES {currentDir}");
 
         if(currentDir != null)
         {
@@ -60,6 +62,29 @@ class Program
         }
         
         return 0;
+    }
+
+    private static bool ScanDirOnDisk(string folderPath)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(folderPath))
+            {
+                ArgumentNullException.ThrowIfNullOrEmpty(argument: folderPath);
+            }
+
+            if (!Directory.Exists(folderPath))
+            {
+                Console.WriteLine($"{folderPath} directory does not exist on disk");
+                return false;
+            }
+
+            Console.WriteLine($"{folderPath} directory exists on disk");
+            return true;
+        }
+        catch(DirectoryNotFoundException ex){
+            throw new DirectoryNotFoundException(message: $"{folderPath} directory not found", innerException: ex);
+        }
     }
 
     private static void ReadFromFile(string filePath)
